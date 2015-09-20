@@ -41,25 +41,3 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
-
-
-#### configure for spring boot app ####
-# Java
-*.class
-*.jar
-*.war
-*.ear
-
-# Eclipse
-.project
-.classpath
-.settings
-
-# build
-bin
-
-# gradle
-.gradle
-
-# other
-exlipseLibs
