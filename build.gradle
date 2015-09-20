@@ -1,0 +1,122 @@
+buildscript {
+    repositories {
+        //mavenCentral()
+        maven {
+        	url "http://repo1.maven.org/maven2"
+    	}
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.2.3.RELEASE")
+	classpath("org.hidetake:gradle-ssh-plugin:1.1.3")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse-wtp'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'org.hidetake.ssh'
+apply plugin: 'war'
+
+jar {
+    baseName = 'recaius_contract_manager'
+    version =  '0.1.0'
+}
+
+repositories {
+    //mavenCentral()
+    maven {
+        url "http://repo1.maven.org/maven2"
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-jdbc")
+    compile("org.springframework.boot:spring-boot-starter-mail")
+
+    compile("org.mybatis:mybatis:3.2.8")
+    compile("org.mybatis:mybatis-spring:1.2.2")
+
+    compile("io.springfox:springfox-swagger2:2.0.2")
+    compile("io.springfox:springfox-swagger-ui:2.0.2")
+    compile('net.glxn.qrgen:javase:2.0')
+
+    testCompile("junit:junit")
+    testCompile 'org.springframework:spring-test:4.1.6.RELEASE'
+
+    runtime("org.postgresql:postgresql:9.4-1201-jdbc41")
+    runtime('org.apache.httpcomponents:httpclient:4.5')
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.4'
+}
+
+// eclipse
+eclipse {
+    project {
+        name = 'recaius_contract_manager'
+        natures 'org.springsource.ide.eclipse.gradle.core.nature'
+    }
+
+    jdt {
+    	sourceCompatibility = 1.8
+    	targetCompatibility = 1.8
+    }
+
+    wtp {
+        facet {
+            facet name: 'jst.java', version: '1.8'
+            facet name: 'jst.web', version: '3.0'
+        }
+
+        component {
+            deployName = 'speechviewer'
+            contextPath  = 'speechviewer'
+        }
+    }
+}
+
+eclipseJdt << {
+    File f = file('.settings/org.eclipse.core.resources.prefs')
+    f.write('eclipse.preferences.version=1\n')
+    f.append('encoding/<project>=utf-8')
+}
+
+remotes {
+  acceptanceServer {
+    host = '10.45.237.82'
+    user = 'root'
+    password = '!SwkaiKcg2015!'
+    knownHosts = allowAnyHosts
+  }
+  acceptancePostgresServer {
+    host = '10.45.237.82'
+    user = 'postgres'
+    password = 'postgres'
+    knownHosts = allowAnyHosts	
+  }
+}
+
+task deployToAcceptanceServer << {
+  ssh.run {
+    session(remotes.acceptanceServer) {
+      execute 'service recaius_contract_manager stop'
+      put from: 'build/libs/recaius_contract_manager-0.1.0.jar', into: '/usr/local/speechviewer/'
+      execute 'service speechviewer start'
+    }
+  }
+}
+
+task updateDBToAcceptancePostgresServer << {
+  ssh.run {
+    session(remotes.acceptancePostgresServer) {
+      put from: 'build/resources/main/sql/create_tables.sql', into: '/var/lib/pgsql/'	
+      execute "psql recaius_contract_manager -c '\\i create_tables.sql'"	
+    }
+  }
+}

@@ -1,0 +1,1 @@
+CREATE DATABASE speechviewer ENCODING 'UTF8';
